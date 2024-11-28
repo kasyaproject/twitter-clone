@@ -1,0 +1,1 @@
+Backend = npm install express mongoose jsonwebtoken bcryptjs dotenv cors cookie-parser cloudinary
