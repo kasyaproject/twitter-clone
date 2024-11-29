@@ -58,7 +58,7 @@ const Post = ({ post }) => {
             )}
           </div>
           <div className="flex flex-col gap-3 overflow-hidden">
-            <span>{post.text}</span>
+            <span>{post.content}</span>
             {post.img && (
               <img
                 src={post.img}
