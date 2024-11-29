@@ -7,6 +7,8 @@ import { MdOutlineMail } from "react-icons/md";
 import { FaUser } from "react-icons/fa";
 import { MdPassword } from "react-icons/md";
 import { MdDriveFileRenameOutline } from "react-icons/md";
+import { useMutation } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 function SignUpPage() {
   const [formData, setFormData] = useState({
@@ -16,16 +18,42 @@ function SignUpPage() {
     password: "",
   });
 
+  const { mutate, isError, isPending, error } = useMutation({
+    mutationFn: async ({ email, username, fullName, password }) => {
+      try {
+        const res = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, username, fullName, password }),
+        });
+
+        const data = await res.json();
+        if (!res.ok)
+          throw new Error(data.message || "Failed to create account");
+
+        console.log(data);
+        return data;
+      } catch (message) {
+        console.error(message);
+        throw message;
+      }
+    },
+    onSuccess: () => {
+      toast.success("Account created successfully");
+    },
+  });
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(formData);
+
+    mutate(formData);
   };
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
-  const isError = false;
 
   return (
     <div className="flex h-screen max-w-screen-xl px-10 mx-auto">
@@ -86,9 +114,9 @@ function SignUpPage() {
             />
           </label>
           <button className="text-white rounded-full btn btn-primary">
-            Sign up
+            {isPending ? "Loading..." : "Sign Up"}
           </button>
-          {isError && <p className="text-red-500">Something went wrong</p>}
+          {isError && <p className="text-red-500">{error.message}</p>}
         </form>
         <div className="flex flex-col gap-2 mt-4 lg:w-2/3">
           <p className="text-lg text-white">Already have an account?</p>

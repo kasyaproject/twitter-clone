@@ -5,6 +5,8 @@ import XSvg from "../../../components/svgs/X";
 
 import { MdOutlineMail } from "react-icons/md";
 import { MdPassword } from "react-icons/md";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 function LoginPage() {
   const [formData, setFormData] = useState({
@@ -12,16 +14,49 @@ function LoginPage() {
     password: "",
   });
 
+  const queryClient = useQueryClient();
+
+  const {
+    mutate: login,
+    isError,
+    isPending,
+    error,
+  } = useMutation({
+    mutationFn: async ({ username, password }) => {
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, password }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Something went wrong");
+
+        console.log(data);
+        return data;
+      } catch (message) {
+        console.error(message);
+        throw message;
+      }
+    },
+    onSuccess: () => {
+      // refetch userAuth disini jika login success maka akan menjalankan query dengan nama queryKey: ["authUser"], di app.jsx
+      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+    },
+  });
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(formData);
+
+    login(formData);
   };
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
-  const isError = false;
 
   return (
     <div className="flex h-screen max-w-screen-xl px-10 mx-auto">
@@ -56,9 +91,9 @@ function LoginPage() {
             />
           </label>
           <button className="text-white rounded-full btn btn-primary">
-            Login
+            {isPending ? "Logging in..." : "Login"}
           </button>
-          {isError && <p className="text-red-500">Something went wrong</p>}
+          {isError && <p className="text-red-500">{error.message}</p>}
         </form>
         <div className="flex flex-col gap-2 mt-4">
           <p className="text-lg text-white">{"Don't"} have an account?</p>
