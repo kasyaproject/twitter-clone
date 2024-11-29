@@ -11,18 +11,17 @@ import { FaArrowLeft } from "react-icons/fa6";
 import { IoCalendarOutline } from "react-icons/io5";
 import { FaLink } from "react-icons/fa";
 import { MdEdit } from "react-icons/md";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { formatMemberSinceDate } from "../../utils/date";
 import btnFollow from "../../hooks/btnFollow";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
-import toast from "react-hot-toast";
+import UpdateUserProfile from "../../hooks/UpdateUserProfile";
 
 const ProfilePage = () => {
   const { username } = useParams();
   const [coverImg, setCoverImg] = useState(null);
   const [profileImg, setProfileImg] = useState(null);
   const [feedType, setFeedType] = useState("posts");
-  const queryClient = useQueryClient();
 
   const coverImgRef = useRef(null);
   const profileImgRef = useRef(null);
@@ -55,38 +54,8 @@ const ProfilePage = () => {
   // Query untuk Follow/Unfollow account
   const { follow, isPending } = btnFollow();
 
-  // Query untuk update Profile
-  const { mutate: updateProfile, isPending: isUpdateingProfile } = useMutation({
-    mutationFn: async () => {
-      try {
-        const res = await fetch("/api/users/update", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ profileImg, coverImg }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) throw new Error(data.message || "Something went error");
-
-        return data;
-      } catch (error) {
-        throw new Error(error);
-      }
-    },
-    onSuccess: () => {
-      toast.success("Profile update successfully");
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["authUser"] }),
-        queryClient.invalidateQueries({ queryKey: ["userProfile"] }),
-      ]);
-    },
-    onError: () => {
-      toast.error("Failed to update profile");
-    },
-  });
+  // Query untuk update Profile coverImg dan profileImg
+  const { updateProfile, isUpdateingProfile } = UpdateUserProfile();
 
   const isMyProfile = authUser._id === user?._id;
   const memberSince = formatMemberSinceDate(user?.createdAt);
@@ -196,7 +165,11 @@ const ProfilePage = () => {
                 {(coverImg || profileImg) && (
                   <button
                     className="px-4 ml-2 text-white rounded-full btn btn-primary btn-sm"
-                    onClick={() => updateProfile()}
+                    onClick={async () => {
+                      await updateProfile({ coverImg, profileImg });
+                      setCoverImg(null);
+                      setProfileImg(null);
+                    }}
                   >
                     {isUpdateingProfile ? "Updateting..." : "Update"}
                   </button>

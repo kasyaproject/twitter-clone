@@ -1,6 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
+import UpdateUserProfile from "../../hooks/UpdateUserProfile";
 
 const EditProfileModal = ({ authUser }) => {
   const [formData, setFormData] = useState({
@@ -12,40 +11,43 @@ const EditProfileModal = ({ authUser }) => {
     newPassword: "",
     currentPassword: "",
   });
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient();
 
   // Query untuk update Profile
-  const { mutate: updateProfile, isPending: isUpdateingProfile } = useMutation({
-    mutationFn: async () => {
-      try {
-        const res = await fetch("/api/users/update", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        });
+  const { updateProfile, isUpdateingProfile } = UpdateUserProfile();
+  // const { mutate: updateProfile, isPending: isUpdateingProfile } = useMutation({
+  //   mutationFn: async () => {
+  //     try {
+  //       const res = await fetch("/api/users/update", {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //         body: JSON.stringify(formData),
+  //       });
 
-        const data = await res.json();
+  //       const data = await res.json();
 
-        if (!res.ok) throw new Error(data.message || "Something went error");
+  //       if (!res.ok) throw new Error(data.message || "Something went error");
 
-        return data;
-      } catch (error) {
-        throw new Error(error);
-      }
-    },
-    onSuccess: () => {
-      toast.success("Profile update successfully");
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["authUser"] }),
-        queryClient.invalidateQueries({ queryKey: ["userProfile"] }),
-      ]);
-    },
-    onError: () => {
-      toast.error("Failed to update profile");
-    },
-  });
+  //       return data;
+  //     } catch (error) {
+  //       throw new Error(error);
+  //     }
+  //   },
+  //   onSuccess: () => {
+  //     toast.success("Profile update successfully");
+  //     Promise.all([
+  //       queryClient.invalidateQueries({ queryKey: ["authUser"] }),
+  //       queryClient.invalidateQueries({ queryKey: ["userProfile"] }),
+  //     ]);
+  //   },
+  //   onError: () => {
+  //     toast.error("Failed to update profile");
+  //   },
+  // });
+
+  // Set form modal dengan data user
 
   useEffect(() => {
     if (authUser) {
@@ -82,7 +84,7 @@ const EditProfileModal = ({ authUser }) => {
             className="flex flex-col gap-4"
             onSubmit={(e) => {
               e.preventDefault();
-              updateProfile();
+              updateProfile(formData);
             }}
           >
             <div className="flex flex-wrap gap-2">
