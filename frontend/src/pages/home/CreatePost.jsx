@@ -2,23 +2,49 @@ import { CiImageOn } from "react-icons/ci";
 import { BsEmojiSmileFill } from "react-icons/bs";
 import { useRef, useState } from "react";
 import { IoCloseSharp } from "react-icons/io5";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 const CreatePost = () => {
-  const [text, setText] = useState("");
+  const [content, setContent] = useState("");
   const [img, setImg] = useState(null);
-
   const imgRef = useRef(null);
+  // const isError = false;
 
-  const isPending = false;
-  const isError = false;
+  const { data: authUser } = useQuery({ queryKey: ["authUser"] });
+  const queryClient = useQueryClient();
 
-  const data = {
-    profileImg: "/avatars/boy1.png",
-  };
+  const { mutate: createPost, isPending } = useMutation({
+    mutationFn: async ({ content, img }) => {
+      try {
+        const res = await fetch("/api/post/create", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ content, img }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.message || "Something went wron");
+
+        return data;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+    onSuccess: () => {
+      setContent("");
+      setImg(null);
+      toast.success("Post created successfully");
+      // Refetch untuk menrefresh data post
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+    },
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert("Post created successfully");
+    createPost({ content, img });
   };
 
   const handleImgChange = (e) => {
@@ -36,15 +62,15 @@ const CreatePost = () => {
     <div className="flex items-start gap-4 p-4 border-b border-gray-700">
       <div className="avatar">
         <div className="w-8 rounded-full">
-          <img src={data.profileImg || "/avatar-placeholder.png"} />
+          <img src={authUser.profileImg || "/avatar-placeholder.png"} />
         </div>
       </div>
       <form className="flex flex-col w-full gap-2" onSubmit={handleSubmit}>
         <textarea
           className="w-full p-0 text-lg border-gray-800 border-none resize-none textarea focus:outline-none"
           placeholder="What is happening?!"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
         />
         {img && (
           <div className="relative mx-auto w-72">
@@ -75,7 +101,7 @@ const CreatePost = () => {
             {isPending ? "Posting..." : "Post"}
           </button>
         </div>
-        {isError && <div className="text-red-500">Something went wrong</div>}
+        {/* {isError && <div className="text-red-500">Something went wrong</div>} */}
       </form>
     </div>
   );
