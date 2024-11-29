@@ -183,7 +183,8 @@ export const commentOnPost = async (req, res) => {
     post.comments.push(comment);
     await post.save();
 
-    res.status(201).json(post);
+    const updatedComments = post.comments;
+    res.status(201).json(updatedComments);
   } catch (error) {
     console.error("Error in commentOnPost Controller ", error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -208,6 +209,7 @@ export const likeUnlikePost = async (req, res) => {
       const updatedLikes = post.likes.filter(
         (id) => id.toString() !== userId.toString()
       );
+
       res.status(200).json(updatedLikes);
     } else {
       // Like post
