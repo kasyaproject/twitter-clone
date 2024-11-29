@@ -4,34 +4,52 @@ import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { IoSettingsOutline } from "react-icons/io5";
 import { FaUser } from "react-icons/fa";
 import { FaHeart } from "react-icons/fa6";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 const NotificationPage = () => {
-  const isLoading = false;
+  // Query untuk mendapatkan semua data notifikasi
+  const { data: notifications, isLoading } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/notification/");
+        const data = await res.json();
 
-  const notifications = [
-    {
-      _id: "1",
-      from: {
-        _id: "1",
-        username: "johndoe",
-        profileImg: "/avatars/boy2.png",
-      },
-      type: "follow",
-    },
-    {
-      _id: "2",
-      from: {
-        _id: "2",
-        username: "janedoe",
-        profileImg: "/avatars/girl1.png",
-      },
-      type: "like",
-    },
-  ];
+        if (!res.ok) throw new Error(data.message || "Something went error");
 
-  const deleteNotifications = () => {
-    alert("All notifications deleted");
-  };
+        return data;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+  });
+
+  // Query untuk delete semua notifikasi
+  const { mutate: deleteNotifications } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch("/api/notification/", {
+          method: "DELETE",
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.message || "Something went error");
+
+        return data;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+    onSuccess: () => {
+      toast.success("Notifications deleted successfully");
+      // Refetch untuk menrefresh data notifikasi
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
 
   return (
     <>
@@ -70,7 +88,7 @@ const NotificationPage = () => {
                 <FaHeart className="text-red-500 w-7 h-7" />
               )}
               <Link to={`/profile/${notification.from.username}`}>
-                <div className="avatar">
+                <div className="items-center space-x-2 avatar">
                   <div className="w-8 rounded-full">
                     <img
                       src={
@@ -79,6 +97,9 @@ const NotificationPage = () => {
                       }
                     />
                   </div>
+                  <span className="text-xl font-bold">
+                    {notification.from.fullName}
+                  </span>{" "}
                 </div>
                 <div className="flex gap-1">
                   <span className="font-bold">
