@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
-const EditProfileModal = () => {
+const EditProfileModal = ({ authUser }) => {
   const [formData, setFormData] = useState({
     fullName: "",
     username: "",
@@ -10,6 +12,54 @@ const EditProfileModal = () => {
     newPassword: "",
     currentPassword: "",
   });
+  const queryClient = useQueryClient();
+
+  // Query untuk update Profile
+  const { mutate: updateProfile, isPending: isUpdateingProfile } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch("/api/users/update", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.message || "Something went error");
+
+        return data;
+      } catch (error) {
+        throw new Error(error);
+      }
+    },
+    onSuccess: () => {
+      toast.success("Profile update successfully");
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["authUser"] }),
+        queryClient.invalidateQueries({ queryKey: ["userProfile"] }),
+      ]);
+    },
+    onError: () => {
+      toast.error("Failed to update profile");
+    },
+  });
+
+  useEffect(() => {
+    if (authUser) {
+      setFormData({
+        fullName: authUser.fullName,
+        username: authUser.username,
+        email: authUser.email,
+        bio: authUser.bio,
+        link: authUser.link,
+        newPassword: "",
+        currentPassword: "",
+      });
+    }
+  }, [authUser]);
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -32,7 +82,7 @@ const EditProfileModal = () => {
             className="flex flex-col gap-4"
             onSubmit={(e) => {
               e.preventDefault();
-              alert("Profile updated successfully");
+              updateProfile();
             }}
           >
             <div className="flex flex-wrap gap-2">
@@ -97,7 +147,7 @@ const EditProfileModal = () => {
               onChange={handleInputChange}
             />
             <button className="text-white rounded-full btn btn-primary btn-sm">
-              Update
+              {isUpdateingProfile ? "Updateting..." : "Update"}
             </button>
           </form>
         </div>
