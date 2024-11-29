@@ -148,9 +148,11 @@ export const deletePost = async (req, res) => {
         .status(403)
         .json({ message: "You are not authorized to delete this post" });
 
+    console.log(postId);
+
     if (postId.img) {
-      // delete image from cloudinary
-      const imgId = post.img.split("/").pop().split(".")[0];
+      const imgId = postId.img.split("/").pop().split(".")[0];
+
       await cloudinary.uploader.destroy(imgId);
     }
 
@@ -183,7 +185,13 @@ export const commentOnPost = async (req, res) => {
     post.comments.push(comment);
     await post.save();
 
-    const updatedComments = post.comments;
+    // Populate data user pada komentar yang diperbarui
+    const updatedPost = await Post.findById(postId).populate({
+      path: "comments.user",
+      select: "fullName username profileImg", // Data user yang akan diambil
+    });
+
+    const updatedComments = updatedPost.comments;
     res.status(201).json(updatedComments);
   } catch (error) {
     console.error("Error in commentOnPost Controller ", error);
