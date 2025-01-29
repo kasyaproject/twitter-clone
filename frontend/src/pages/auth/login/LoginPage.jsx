@@ -35,7 +35,7 @@ function LoginPage() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || "Something went wrong");
 
-        console.log(data);
+        // console.log(data);
         return data;
       } catch (message) {
         console.error(message);
